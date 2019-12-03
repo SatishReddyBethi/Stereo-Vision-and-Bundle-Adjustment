@@ -52,6 +52,7 @@ pts1 = pts1[mask.ravel()==1]
 pts2 = pts2[mask.ravel()==1]
 
 
+# region Drawing
 # Find epilines corresponding to points in right image (second image) and
 # drawing its lines on left image
 lines1 = cv2.computeCorrespondEpilines(pts2.reshape(-1,1,2), 2,F)
@@ -67,3 +68,4 @@ img3,img4 = drawlines(img2,img1,lines2,pts2,pts1)
 plt.subplot(121),plt.imshow(img5)
 plt.subplot(122),plt.imshow(img3)
 plt.show()
+# endregion
