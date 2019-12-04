@@ -17,8 +17,8 @@ def drawlines(img1,img2,lines,pts1,pts2):
         img2 = cv2.circle(img2,tuple(pt2),5,color,-1)
     return img1,img2
 
-img1 = cv2.imread('ImageData/img_00000.jpg',0)  # GrayScale
-img2 = cv2.imread('ImageData/img_00001.jpg',0)
+img1 = cv2.imread('Captures/0.jpg',0)  # GrayScale
+img2 = cv2.imread('Captures/1.jpg',0)
 sift = cv2.xfeatures2d.SIFT_create()
 
 # find the keypoints and descriptors with SIFT
