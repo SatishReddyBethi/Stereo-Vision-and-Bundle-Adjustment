@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 
 def NewPixels(pts1,pts2,stichedImg,Img2):
+    global saving
     AvgPt1 = np.average(pts1, axis=0)
     AvgPt2 = np.average(pts2, axis=0)
     Theta = np.arccos(np.dot(AvgPt1,AvgPt2)/(np.linalg.norm(AvgPt1)*np.linalg.norm(AvgPt2)))
@@ -9,21 +10,19 @@ def NewPixels(pts1,pts2,stichedImg,Img2):
 
     (h, w) = stichedImg.shape[:2]
     (cX, cY) = (w // 2, h // 2)
-    M = cv2.getRotationMatrix2D((cX, cY), -Theta, 1.0)
-    cos = np.abs(M[0, 0])
-    sin = np.abs(M[0, 1])
-
-    # compute the new bounding dimensions of the image
-    nW = int((h * sin) + (w * cos))
-    nH = int((h * cos) + (w * sin))
-
-    # adjust the rotation matrix to take into account translation
-    M[0, 2] += (nW / 2) - cX
-    M[1, 2] += (nH / 2) - cY
-
+    M = np.array([[np.cos(-Theta),-np.sin(-Theta),-Delta[0]],[np.sin(-Theta), np.cos(-Theta),-Delta[1]],[0,0,1]])
     # perform the actual rotation and return the image
-    NewstichedImg = cv2.warpAffine(stichedImg, M, (nW, nH))
+    # M = cv2.getRotationMatrix2D((cX, cY), -Theta, 1.0)
+    # final = cv2.warpAffine(Img2, M, (3100, 3100))
 
+    final = cv2.warpPerspective(Img2, M, (3100, 3100))
+    final_OGM = final[:, :, 0] + final[:, :, 1] + final[:, :, 2]
+    mask = np.where(final_OGM == 0)
+    # print(stichedImg.shape)
+    final[mask[0], mask[1]] = stichedImg[mask[0], mask[1]]
+    cv2.imwrite("Output_Images/BA_" + str(saving) + ".png", final)
+    saving += 1
+    """
     # perform translation on stiched img
     M = np.float32([[1, 0, Delta[0]], [0, 1, Delta[1]]])
     #print(nW,nH,stichedImg.shape[0],stichedImg.shape[1])
@@ -36,15 +35,19 @@ def NewPixels(pts1,pts2,stichedImg,Img2):
     cv2.imshow('Prev Stitched Img', stichedImg)
     cv2.imshow('New Stitched Img', NewstichedImg)
     cv2.waitKey(0)
+    """
+    return final
 
-    return Img2,NewstichedImg
 
-
-
+saving = 0
 path = "ImageData/img_00000.jpg"
 image1  =  cv2.imread(path)
 StitchedImg = image1.copy()
 N = 40
+center = (2000,2000)
+initial_center = np.array([[1.0000000e+00,0.0,center[0]-320],[0.0,1.0000000e+00,center[1]-240],[0.0,0.0,1.0000000e+00]])
+T = initial_center
+f0 = cv2.warpPerspective(image1,T,(3100,3100))
 sift = cv2.xfeatures2d.SIFT_create()
 
 for i in range(N):
@@ -52,7 +55,7 @@ for i in range(N):
     path = "ImageData/img_" + str(i + 1).zfill(5) + ".jpg"
     image2 = cv2.imread(path)
     # find the keypoints and descriptors with SIFT
-    kp1, des1 = sift.detectAndCompute(image1, None)
+    kp1, des1 = sift.detectAndCompute(f0, None)
     kp2, des2 = sift.detectAndCompute(image2, None)
     # FLANN parameters
     FLANN_INDEX_KDTREE = 0
@@ -74,7 +77,7 @@ for i in range(N):
     pts2 = np.int32(pts2)
     # print(pts1)
     # print(pts2)
-    image1,StitchedImg = NewPixels(pts1,pts2,StitchedImg,image2)
+    f0 = NewPixels(pts1,pts2,f0,image2)
 
 cv2.imshow('New Stitched Img', StitchedImg)
 cv2.imwrite('Output_Images/Out.jpg',StitchedImg)
